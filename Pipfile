@@ -7,9 +7,7 @@ name = "pypi"
 
 [packages]
 
-redbaron = "*"
-pytest = "*"
-
 
 [dev-packages]
 
+pytest = "*"
