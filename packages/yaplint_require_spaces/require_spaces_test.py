@@ -1,5 +1,5 @@
 from yaplint import linter
-from . import RequireSpaces
+from require_spaces import RequireSpaces
 
 
 def test_require_spaces_single_indent():
