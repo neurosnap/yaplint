@@ -1,11 +1,22 @@
+from functools import reduce
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
+from lib2to3.fixer_base import BaseFix
 
 
 python_grammar = pygram.python_grammar
-defaultOpts = {
+DEFAULT_OPTS = {
     'fix': True,
+    'filename': "",
 }
+DEFAULT_LINT_RULE_OPTS = {
+    'name': "",
+}
+RULE_SETTING_OPTIONS = ["off", "warning", "error"]
+
+
+class InvalidLintRuleSetting(Exception):
+    pass
 
 
 def refactor_string(driver, src):
@@ -74,12 +85,72 @@ def traverse_by(fixers, traversal, options):
                 node = new
 
 
-def report(node, msg):
-    print("{lineno}: {msg}".format(lineno=node.lineno, msg=msg))
+class LintRule(BaseFix):
+
+    def __init__(self, options=None, log=None):
+        if options is None:
+            options = DEFAULT_LINT_RULE_OPTS
+        if not self.name and "name" not in options:
+            raise InvalidLintRuleSetting("`name` is required for LintRule")
+        self.errors = []
+        self.warnings = []
+        self.rule_setting = "error"
+
+        linter_option_keys = ["rule_setting"]
+        linter_options = {}
+        base_options = {}
+
+        for key in options:
+            if key in linter_option_keys:
+                linter_options[key] = options[key]
+            else:
+                base_options[key] = options[key]
+
+        if 'rule_setting' in linter_options:
+            rule_setting = linter_options['rule_setting']
+            if rule_setting not in RULE_SETTING_OPTIONS:
+                err = "Invalid `rule_setting` {}, options are {}".format(
+                    rule_setting,
+                    RULE_SETTING_OPTIONS,
+                )
+                raise InvalidLintRuleSetting(err)
+            self.rule_setting = rule_setting
+
+        super().__init__(base_options, log)
+
+    def report(self, node, msg, *, filename=""):
+        path = ""
+        if filename:
+            path = "{}:".format(filename)
+
+        issue = "{name} {path}{lineno}: {msg}".format(
+            name=self.name,
+            path=path,
+            lineno=node.lineno,
+            msg=msg,
+        )
+        if self.rule_setting == "error":
+            self.errors.append(issue)
+        elif self.rule_setting == "warning":
+            self.warnings.append(issue)
 
 
-def linter(src, fixers, options=None):
-    opts = options if options is not None else defaultOpts
+def is_rule_active(rule):
+    return rule.rule_setting != "off"
+
+
+def accumulate_list(acc, rule):
+    nacc = acc[:]
+    nacc.append(rule)
+    return nacc
+
+
+def linter(src, rules, options=None):
+    opts = options if options is not None else DEFAULT_OPTS
+
+    active_rules = list(filter(is_rule_active, rules))
+    if not active_rules:
+        return
 
     driver = pgen2.driver.Driver(
         python_grammar,
@@ -87,7 +158,17 @@ def linter(src, fixers, options=None):
     )
 
     ast = refactor_string(driver, "{}\n".format(src))
-    was_changed = refactor_tree(fixers, ast, opts)
-    print("was src changed?: ", was_changed)
+    was_changed = refactor_tree(active_rules, ast, opts)
 
-    return ast
+    errors = []
+    warnings = []
+    for rule in rules:
+        errors = reduce(accumulate_list, rule.errors, errors)
+        warnings = reduce(accumulate_list, rule.warnings, warnings)
+
+    return {
+        'ast': ast,
+        'errors': errors,
+        'warnings': warnings,
+        'was_src_changed': was_changed,
+    }
