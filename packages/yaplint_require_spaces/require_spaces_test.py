@@ -5,7 +5,7 @@ from require_spaces import RequireSpaces
 def test_require_spaces_single_indent():
     src = 'test = 1\nif test:\n\tprint("hi mom")'
     rules = [RequireSpaces({}, None)]
-    result = linter(src, rules)
+    result = linter(src, rules, options={'fix': False})
 
     expected = 'test = 1\nif test:\n    print("hi mom")\n'
     assert str(result) == expected
