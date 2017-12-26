@@ -76,11 +76,20 @@ def fix(node, newline_setting):
     suite = list(
         filter(lambda c: c.type == python_symbols.suite, children)
     )
+
     if not suite:
         return
+
     prefix = suite[-1].children[-1].prefix
-    prefix_arr = prefix.split('\n')[:-1]
+    newline_str = "\n"
+    if "\r\n" in prefix:
+        newline_str = "\r\n"
+    prefix_arr = prefix.split(newline_str)
     new_prefix = []
+    add_newline = prefix_arr[-1] == ''
+
+    if add_newline:
+        prefix_arr = prefix_arr[:-1]
 
     new_prefix = remove_newlines(prefix_arr, newline_setting)
     needs_newlines = should_insert_newlines(new_prefix, newline_setting)
@@ -89,8 +98,10 @@ def fix(node, newline_setting):
         new_prefix = insert_newlines(new_prefix, newline_setting)
 
     new_prefix = list(reversed(new_prefix))
-    new_prefix.append('')
-    suite[-1].children[-1].prefix = '\n'.join(new_prefix)
+    if add_newline:
+        new_prefix.append('')
+
+    suite[-1].children[-1].prefix = newline_str.join(new_prefix)
     return node
 
 
@@ -103,6 +114,7 @@ class BlankLinesRule(LintRule):
         if options is None:
             options = {}
         self.num_newlines = options.get("num_newlines", 2)
+        self.internal_num_newlines = options.get("internal_num_newlines", 1)
         super().__init__(options)
 
     def transform(self, node, results, options=None):
@@ -111,9 +123,10 @@ class BlankLinesRule(LintRule):
         should_fix = options.get("fix", True)
         newline_setting = self.num_newlines
 
-        # we only care about top-level functions and classes
+        # internal def have a different setting
         if node.depth() > 1:
-            return
+            newline_setting = self.internal_num_newlines
+        print(newline_setting)
 
         if node.prev_sibling is None:
             return
