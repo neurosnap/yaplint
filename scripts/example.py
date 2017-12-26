@@ -1,5 +1,3 @@
-class Test(object):
-    pass
-
-class TestTwo(object):
-    pass
+test=1
+test = 1
+test  =  1
