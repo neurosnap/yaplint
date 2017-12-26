@@ -134,7 +134,7 @@ class LintRule(BaseFix):
         issue = "{name} {path}{lineno}: {msg}".format(
             name=self.name,
             path=path,
-            lineno=node.lineno,
+            lineno=node.get_lineno(),
             msg=msg,
         )
         if self.rule_setting == "error":
