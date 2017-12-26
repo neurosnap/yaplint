@@ -1,4 +1,4 @@
-# yaplint (Yet Another Python Linter)
+# yaplint (Yet Another Python Linter) [![Build Status](https://travis-ci.org/neurosnap/yaplint.svg?branch=master)](https://travis-ci.org/neurosnap/yaplint)
 
 ## Install
 
