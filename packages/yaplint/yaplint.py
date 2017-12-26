@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from functools import reduce
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
@@ -15,7 +16,11 @@ DEFAULT_LINT_RULE_OPTS = {
 RULE_SETTING_OPTIONS = ["off", "warning", "error"]
 
 
-class InvalidLintRuleSetting(Exception):
+class YaplintException(Exception):
+    pass
+
+
+class InvalidLintRuleSetting(YaplintException):
     pass
 
 
@@ -90,7 +95,7 @@ class LintRule(BaseFix):
     def __init__(self, options=None, log=None):
         if options is None:
             options = DEFAULT_LINT_RULE_OPTS
-        if not self.name and "name" not in options:
+        if not hasattr(self, "name") and "name" not in options:
             raise InvalidLintRuleSetting("`name` is required for LintRule")
         self.errors = []
         self.warnings = []
@@ -117,6 +122,9 @@ class LintRule(BaseFix):
             self.rule_setting = rule_setting
 
         super().__init__(base_options, log)
+
+    def transform(self, node, results, options=None):
+        super().transform(node, results)
 
     def report(self, node, msg, *, filename=""):
         path = ""
@@ -148,9 +156,19 @@ def accumulate_list(acc, rule):
 def linter(src, rules, options=None):
     opts = options if options is not None else DEFAULT_OPTS
 
+    result = {
+        'ast': None,
+        'errors': [],
+        'warnings': [],
+        'src_was_changed': False,
+    }
+
+    if not src:
+        return result
+
     active_rules = list(filter(is_rule_active, rules))
     if not active_rules:
-        return
+        return result
 
     driver = pgen2.driver.Driver(
         python_grammar,
@@ -158,6 +176,9 @@ def linter(src, rules, options=None):
     )
 
     ast = refactor_string(driver, "{}\n".format(src))
+    if ast is None:
+        return result
+
     was_changed = refactor_tree(active_rules, ast, opts)
 
     errors = []
@@ -170,5 +191,5 @@ def linter(src, rules, options=None):
         'ast': ast,
         'errors': errors,
         'warnings': warnings,
-        'was_src_changed': was_changed,
+        'src_was_changed': was_changed,
     }
