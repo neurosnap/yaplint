@@ -1,5 +1,6 @@
 from lib2to3.pygram import python_symbols
-from yaplint import LintRule
+
+from yaplint_core import LintRule
 
 
 def remove_newlines(prefix_arr, newline_setting):
@@ -138,6 +139,8 @@ class BlankLinesRule(LintRule):
         suite = list(
             filter(lambda c: c.type == python_symbols.suite, children)
         )
+        if not suite:
+            return
         prefix = suite[-1].children[-1].prefix
         prefix_arr = prefix.split('\n')[:-1]
 
@@ -159,3 +162,6 @@ class BlankLinesRule(LintRule):
                 ),
                 filename=filename,
             )
+
+
+rules = [BlankLinesRule]

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from lib2to3.pgen2 import token
-from yaplint import LintRule, linter
+from yaplint_core import LintRule, linter
 
 DEFAULT_LINTER_RESULT = {
     'ast': None,

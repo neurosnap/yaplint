@@ -1,6 +1,6 @@
-from yaplint import linter
+from yaplint_core import linter
 
-from blank_lines import BlankLinesRule
+from yaplint_blank_lines import BlankLinesRule
 
 
 def src_equal(actual, expected):
@@ -20,7 +20,12 @@ class Two(object):
     pass
 """
 
-    expected = ["blank_lines 5: expected 2 blank lines, found 1"]
+    expected = [{
+        "name": "blank_lines",
+        "filename": "",
+        "lineno": 5,
+        "msg": "expected 2 blank lines, found 1",
+    }]
 
     actual = linter(src, rules, fix=False)
     assert actual['errors'] == expected

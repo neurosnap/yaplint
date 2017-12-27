@@ -1,7 +1,7 @@
 import os
 from lib2to3.pgen2 import token
 
-from yaplint import lint_runner, LintRule
+from yaplint_core import lint_runner, LintRule
 
 PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -45,14 +45,9 @@ def test_lint_runner_on_runner_one():
     _dir = os.path.join(PATH, "fixtures", "runner_one")
     rules = [AnotherExampleRule()]
     results = lint_runner(_dir, rules, fix=False)
-    for err in results["errors"]:
-        print(err)
     expect = [
-        "another_example ./packages/yaplint/fixtures/runner_one/one.py:1:"
-        " require spacing between expressions",
-        "another_example ./packages/yaplint/fixtures/runner_one/three/four.py:"
-        "1: require spacing between expressions",
-        "another_example ./packages/yaplint/fixtures/runner_one/three/four.py:"
-        "2: require spacing between expressions",
+        {"name": "another_example", "filename": "./packages/yaplint_core/fixtures/runner_one/one.py", "lineno": 1, "msg": "require spacing between expressions"},
+        {"name": "another_example", "filename": "./packages/yaplint_core/fixtures/runner_one/three/four.py", "lineno": 1, "msg": "require spacing between expressions"},
+        {"name": "another_example", "filename": "./packages/yaplint_core/fixtures/runner_one/three/four.py", "lineno": 2, "msg": "require spacing between expressions"},
     ]
     assert results["errors"] == expect

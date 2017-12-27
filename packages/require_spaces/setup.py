@@ -9,5 +9,5 @@ setup(
     author='Eric Bower',
     author_email='neurosnap@gmail.com',
     url='https://github.com/neurosnap/yaplint',
-    py_modules=["require_spaces"],
+    py_modules=["yaplint_require_spaces"],
 )

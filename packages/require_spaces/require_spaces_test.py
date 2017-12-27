@@ -1,5 +1,5 @@
-from yaplint import linter
-from require_spaces import RequireSpaces
+from yaplint_core import linter
+from yaplint_require_spaces import RequireSpaces
 
 
 def test_require_spaces_single_indent():
@@ -17,5 +17,10 @@ def test_require_spaces_single_indent_error():
     result = linter(src, rules, fix=False)
 
     actual = result['errors']
-    expected = ["require_spaces 3: spaces are required"]
+    expected = [{
+        "name": "require_spaces",
+        "filename": "",
+        "lineno": 3,
+        "msg": "spaces are required",
+    }]
     assert actual == expected

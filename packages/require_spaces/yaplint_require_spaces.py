@@ -1,7 +1,7 @@
 from lib2to3 import pgen2
 from lib2to3.fixer_util import Leaf
 
-from yaplint import LintRule
+from yaplint_core import LintRule
 
 
 class RequireSpaces(LintRule):
@@ -24,3 +24,6 @@ class RequireSpaces(LintRule):
 
         if "\t" in node.value:
             return self.report(node, "spaces are required", filename=filename)
+
+
+rules = [RequireSpaces]
