@@ -24,7 +24,7 @@ class ExampleRule(LintRule):
     def match(self, node):
         pass
 
-    def transform(self, node, results, options=None):
+    def transform(self, node, results):
         pass
 
 
@@ -53,7 +53,7 @@ class AnotherExampleRule(LintRule):
     expr_stmt
     """
 
-    def transform(self, node, results, options=None):
+    def transform(self, node, results):
         for child in node.children:
             if child.type == token.EQUAL:
                 child.prefix = ' '

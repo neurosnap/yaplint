@@ -22,7 +22,7 @@ class Two(object):
 
     expected = ["blank_lines 5: expected 2 blank lines, found 1"]
 
-    actual = linter(src, rules, {'fix': False})
+    actual = linter(src, rules, fix=False)
     assert actual['errors'] == expected
 
 
@@ -31,7 +31,7 @@ def test_blank_lines_missing_newline_windows_fix():
     src = "def test():\r\n    pass\r\n\r\nclass Two:\r\n    pass\r\n"
     expected = "def test():\r\n    pass\r\n\r\n\r\nclass Two:\r\n    pass\r\n"
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
 
 
@@ -54,7 +54,7 @@ class Two(object):
     pass
 """
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
 
 
@@ -79,7 +79,7 @@ class Two(object):
     pass
 """
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
 
 
@@ -101,7 +101,7 @@ class Two(object):
     pass
 """
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
 
 
@@ -134,7 +134,7 @@ class TestTwo(object):
     pass
 """
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
 
 
@@ -165,7 +165,7 @@ class Two(object):
         pass
 """
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
 
 
@@ -195,5 +195,5 @@ class Two(object):
         pass
 """
 
-    actual = linter(src, rules, {'fix': True})
+    actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)

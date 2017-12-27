@@ -12,18 +12,15 @@ class RequireSpaces(LintRule):
             return True
         return False
 
-    def transform(self, node, results, options):
-        shouldFix = options['fix']
-        filename = ""
-        if "filename" in options:
-            filename = options['filename']
+    def transform(self, node, results):
+        if node.type != pgen2.token.INDENT:
+            return
+        node.value = node.value.replace('\t', ' ' * 4)
+        return node
 
-        if node.type == pgen2.token.INDENT:
-            if shouldFix:
-                node.value = node.value.replace('\t', ' ' * 4)
-                return node
+    def lint(self, node, results, filename=None):
+        if node.type != pgen2.token.INDENT:
+            return
 
-            if "\t" in node.value:
-                self.report(node, "spaces are required", filename=filename)
-
-        return
+        if "\t" in node.value:
+            return self.report(node, "spaces are required", filename=filename)

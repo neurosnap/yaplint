@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-from functools import reduce
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
 from lib2to3.fixer_base import BaseFix
@@ -10,13 +9,6 @@ walk = os.walk
 tokenize = pgen2.tokenize
 
 python_grammar = pygram.python_grammar
-DEFAULT_OPTS = {
-    'fix': True,
-    'filename': "",
-}
-DEFAULT_LINT_RULE_OPTS = {
-    'name': "",
-}
 RULE_SETTING_OPTIONS = ["off", "warning", "error"]
 
 
@@ -68,7 +60,7 @@ def refactor_string(driver, src):
     return tree
 
 
-def refactor_tree(fixers, tree, options):
+def refactor_tree(fixers, tree, **kwargs):
     """Refactors a parse tree (modifying the tree in place).
     For compatible patterns the bottom matcher module is
     used. Otherwise the tree is traversed node-to-node for
@@ -82,15 +74,16 @@ def refactor_tree(fixers, tree, options):
     for fixer in fixers:
         fixer.start_tree(tree, fixer.name)
 
-    traverse_by(fixers, tree.pre_order(), options)
+    results = traverse_by(fixers, tree.pre_order(), **kwargs)
 
     for fixer in fixers:
         fixer.finish_tree(tree, fixer.name)
 
-    return tree.was_changed
+    results["was_changed"] = tree.was_changed
+    return results
 
 
-def traverse_by(fixers, traversal, options):
+def traverse_by(fixers, traversal, fix=True, **kwargs):
     """Traverse an AST, applying a set of fixers to each node.
     This is a helper method for refactor_tree().
     Args:
@@ -102,29 +95,46 @@ def traverse_by(fixers, traversal, options):
     if not fixers:
         return
 
+    combined_results = {
+        "errors": [],
+        "warnings": [],
+    }
+
     for node in traversal:
         for fixer in fixers:
-            results = fixer.match(node)
+            match_results = fixer.match(node)
 
-            if not results:
+            if not match_results:
                 continue
 
-            new = fixer.transform(node, results, options)
+            if not fix:
+                results = fixer.lint(node, match_results, **kwargs)
+                if results is None:
+                    continue
+                if fixer.rule_setting == "error":
+                    combined_results["errors"].append(results)
+                elif fixer.rule_setting == "warning":
+                    combined_results["warnings"].append(results)
+                continue
 
-            if new is not None:
-                node.replace(new)
-                node = new
+            new_node = fixer.transform(node, match_results)
+
+            if new_node is None:
+                continue
+
+            node.replace(new_node)
+            node = new_node
+
+    return combined_results
 
 
 class LintRule(BaseFix):
 
     def __init__(self, options=None, log=None):
         if options is None:
-            options = DEFAULT_LINT_RULE_OPTS
+            options = {}
         if not hasattr(self, "name") and "name" not in options:
             raise InvalidLintRuleSetting("`name` is required for LintRule")
-        self.errors = []
-        self.warnings = []
         self.rule_setting = "error"
 
         linter_option_keys = ["rule_setting"]
@@ -149,8 +159,11 @@ class LintRule(BaseFix):
 
         super().__init__(base_options, log)
 
-    def transform(self, node, results, options=None):
+    def transform(self, node, results, **kwargs):
         super().transform(node, results)
+
+    def lint(self, node, results, **kwargs):
+        pass
 
     def report(self, node, msg, *, filename=""):
         path = ""
@@ -163,10 +176,7 @@ class LintRule(BaseFix):
             lineno=node.get_lineno(),
             msg=msg,
         )
-        if self.rule_setting == "error":
-            self.errors.append(issue)
-        elif self.rule_setting == "warning":
-            self.warnings.append(issue)
+        return issue
 
 
 def is_rule_active(rule):
@@ -179,9 +189,7 @@ def accumulate_list(acc, rule):
     return nacc
 
 
-def linter(src, rules, options=None):
-    opts = options if options is not None else DEFAULT_OPTS
-
+def linter(src, rules, fix=False, filename=""):
     result = {
         'ast': None,
         'errors': [],
@@ -202,13 +210,10 @@ def linter(src, rules, options=None):
     if ast is None:
         return result
 
-    was_changed = refactor_tree(active_rules, ast, opts)
-
-    errors = []
-    warnings = []
-    for rule in rules:
-        errors = reduce(accumulate_list, rule.errors, errors)
-        warnings = reduce(accumulate_list, rule.warnings, warnings)
+    results = refactor_tree(active_rules, ast, fix=fix, filename=filename)
+    errors = results["errors"]
+    warnings = results["warnings"]
+    was_changed = results["was_changed"]
 
     return {
         'ast': ast,
@@ -251,7 +256,7 @@ def get_driver():
     )
 
 
-def lint_runner(_dir, rules, options):
+def lint_runner(_dir, rules, **kwargs):
     results = {
         "errors": [],
         "warnings": [],
@@ -275,8 +280,8 @@ def lint_runner(_dir, rules, options):
                 print("--")
 
                 tmp_path = os.path.commonprefix([os.getcwd(), fullname])
-                options["filename"] = fullname.replace(tmp_path, ".")
-                res = linter(src, rules, options)
+                filename = fullname.replace(tmp_path, ".")
+                res = linter(src, rules, filename=filename, **kwargs)
                 results["errors"] = results["errors"] + res["errors"]
                 results["warnings"] = results["warnings"] + res["warnings"]
         # Modify dirnames in-place to remove subdirs with leading dots

@@ -117,10 +117,7 @@ class BlankLinesRule(LintRule):
         self.internal_num_newlines = options.get("internal_num_newlines", 1)
         super().__init__(options)
 
-    def transform(self, node, results, options=None):
-        if options is None:
-            options = {}
-        should_fix = options.get("fix", True)
+    def transform(self, node, results):
         newline_setting = self.num_newlines
 
         # internal def have a different setting
@@ -130,10 +127,13 @@ class BlankLinesRule(LintRule):
         if node.prev_sibling is None:
             return
 
-        if should_fix:
-            return fix(node, newline_setting)
+        return fix(node, newline_setting)
 
+    def lint(self, node, results, filename=None):
+        newline_setting = self.num_newlines
         # newlines preceding a def are inside the previous sibling's suite
+        if not node.prev_sibling:
+            return
         children = node.prev_sibling.children
         suite = list(
             filter(lambda c: c.type == python_symbols.suite, children)
@@ -151,10 +151,11 @@ class BlankLinesRule(LintRule):
                 counter = 0
 
         if counter != newline_setting:
-            self.report(
+            return self.report(
                 node,
                 "expected {} blank lines, found {}".format(
                     newline_setting,
                     counter,
                 ),
+                filename=filename,
             )
