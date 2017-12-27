@@ -126,7 +126,6 @@ class BlankLinesRule(LintRule):
         # internal def have a different setting
         if node.depth() > 1:
             newline_setting = self.internal_num_newlines
-        print(newline_setting)
 
         if node.prev_sibling is None:
             return

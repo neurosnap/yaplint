@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import sys
+import os
 from functools import reduce
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
 from lib2to3.fixer_base import BaseFix
 
+walk = os.walk
+tokenize = pgen2.tokenize
 
 python_grammar = pygram.python_grammar
 DEFAULT_OPTS = {
@@ -14,6 +18,28 @@ DEFAULT_LINT_RULE_OPTS = {
     'name': "",
 }
 RULE_SETTING_OPTIONS = ["off", "warning", "error"]
+
+
+def _identity(obj):
+    return obj
+
+
+if sys.version_info < (3, 0):
+    import codecs
+    _open_with_encoding = codecs.open
+
+    # codecs.open doesn't translate newlines sadly.
+    def _from_system_newlines(input):
+        return input.replace("\r\n", "\n")
+
+    def _to_system_newlines(input):
+        if os.linesep != "\n":
+            return input.replace("\n", os.linesep)
+        return input
+else:
+    _open_with_encoding = open
+    _from_system_newlines = _identity
+    _to_system_newlines = _identity
 
 
 class YaplintException(Exception):
@@ -170,10 +196,7 @@ def linter(src, rules, options=None):
     if not active_rules:
         return result
 
-    driver = pgen2.driver.Driver(
-        python_grammar,
-        convert=pytree.convert,
-    )
+    driver = get_driver()
 
     ast = refactor_string(driver, "{}\n".format(src))
     if ast is None:
@@ -193,3 +216,74 @@ def linter(src, rules, options=None):
         'warnings': warnings,
         'src_was_changed': was_changed,
     }
+
+
+def _read_python_source(filename):
+    """
+    Do our best to decode a Python source file correctly.
+    """
+    try:
+        f = open(filename, "rb")
+    except OSError as err:
+        print("Can't open {}: {}".format(filename, err))
+        return None, None
+    try:
+        encoding = tokenize.detect_encoding(f.readline)[0]
+    finally:
+        f.close()
+
+    with _open_with_encoding(filename, "r", encoding=encoding) as f:
+        return _from_system_newlines(f.read()), encoding
+
+
+def refactor_file(filename):
+    src, _ = _read_python_source(filename)
+    if src is None:
+        # Reading the file failed.
+        return
+    return src
+
+
+def get_driver():
+    return pgen2.driver.Driver(
+        python_grammar,
+        convert=pytree.convert,
+    )
+
+
+def lint_runner(_dir, rules, options):
+    results = {
+        "errors": [],
+        "warnings": [],
+    }
+    py_ext = os.extsep + "py"
+
+    for dirpath, dirnames, filenames in os.walk(_dir):
+        dirnames.sort()
+        filenames.sort()
+        for name in filenames:
+            should_read_file = (
+                not name.startswith(".")
+                and os.path.splitext(name)[1] == py_ext
+            )
+            if should_read_file:
+                fullname = os.path.join(dirpath, name)
+                src = refactor_file(fullname)
+                print("--")
+                print(name)
+                print(src)
+                print("--")
+
+                tmp_path = os.path.commonprefix([os.getcwd(), fullname])
+                options["filename"] = fullname.replace(tmp_path, ".")
+                res = linter(src, rules, options)
+                results["errors"] = results["errors"] + res["errors"]
+                results["warnings"] = results["warnings"] + res["warnings"]
+        # Modify dirnames in-place to remove subdirs with leading dots
+        dirnames[:] = [dn for dn in dirnames if not dn.startswith(".")]
+
+    return results
+
+
+if __name__ == '__main__':
+    print("lint runner")
