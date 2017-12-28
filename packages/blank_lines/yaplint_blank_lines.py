@@ -1,4 +1,5 @@
 from lib2to3.pygram import python_symbols
+from lib2to3.pytree import type_repr
 
 from yaplint_core import LintRule
 
@@ -74,6 +75,10 @@ def insert_newlines(prefix_arr, newline_setting):
 
 def fix(node, newline_setting):
     children = node.prev_sibling.children
+
+    if not children:
+        return
+
     suite = list(
         filter(lambda c: c.type == python_symbols.suite, children)
     )
@@ -109,7 +114,7 @@ def fix(node, newline_setting):
 class BlankLinesRule(LintRule):
     name = 'blank_lines'
 
-    PATTERN = "classdef | funcdef"
+    PATTERN = "classdef | funcdef | decorated"
 
     def __init__(self, options=None):
         if options is None:
@@ -120,15 +125,15 @@ class BlankLinesRule(LintRule):
 
     def transform(self, node, results):
         newline_setting = self.num_newlines
+        use_node = node
 
-        # internal def have a different setting
-        if node.depth() > 1:
+        if use_node.depth() > 1:
             newline_setting = self.internal_num_newlines
 
-        if node.prev_sibling is None:
+        if use_node.prev_sibling is None:
             return
 
-        return fix(node, newline_setting)
+        return fix(use_node, newline_setting)
 
     def lint(self, node, results, filename=None):
         newline_setting = self.num_newlines

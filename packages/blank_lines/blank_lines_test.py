@@ -202,3 +202,63 @@ class Two(object):
 
     actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
+
+
+def test_blank_lines_decorator_fix():
+    rules = [BlankLinesRule()]
+    src = """
+def test():
+    pass
+
+@a_decorator
+def wow():
+    pass
+"""
+
+    expected = """
+def test():
+    pass
+
+
+@a_decorator
+def wow():
+    pass
+"""
+
+    actual = linter(src, rules, fix=True)
+    assert src_equal(actual, expected)
+
+
+def test_blank_lines_internal_decorator_fix():
+    rules = [BlankLinesRule()]
+    src = """
+def test():
+    pass
+
+
+class Test(object):
+    def one():
+        pass
+
+
+    @a_decorator
+    def wow():
+        pass
+"""
+
+    expected = """
+def test():
+    pass
+
+
+class Test(object):
+    def one():
+        pass
+
+    @a_decorator
+    def wow():
+        pass
+"""
+
+    actual = linter(src, rules, fix=True)
+    assert src_equal(actual, expected)
