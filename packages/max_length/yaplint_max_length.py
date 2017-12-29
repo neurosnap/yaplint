@@ -18,7 +18,6 @@ class MaxLength(LintRule):
 
         for i, line in enumerate(lines):
             line_len = len(line)
-            print(line_len)
             if line_len > self.code:
                 msg = "max line has been exceeded {} > {}" \
                      .format(line_len, self.code)
@@ -28,7 +27,6 @@ class MaxLength(LintRule):
                     lineno=i + 1,
                     filename=filename,
                 )
-        print(lines)
 
 
 rules = [MaxLength]
