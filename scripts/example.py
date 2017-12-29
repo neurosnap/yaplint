@@ -1,3 +1,1 @@
-test=1
-cool = 1
-wow  =  1
+test(1, 2, 3)

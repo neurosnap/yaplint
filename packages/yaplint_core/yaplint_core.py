@@ -60,7 +60,7 @@ def refactor_string(driver, src):
     return tree
 
 
-def refactor_tree(fixers, tree, **kwargs):
+def refactor_tree(fixers, tree, src, **kwargs):
     """Refactors a parse tree (modifying the tree in place).
     For compatible patterns the bottom matcher module is
     used. Otherwise the tree is traversed node-to-node for
@@ -71,10 +71,28 @@ def refactor_tree(fixers, tree, **kwargs):
     Returns:
         True if the tree was modified, False otherwise.
     """
+    results = {
+        "ast": tree,
+        "errors": [],
+        "warnings": [],
+    }
+
     for fixer in fixers:
         fixer.start_tree(tree, fixer.name)
 
-    results = traverse_by(fixers, tree.pre_order(), **kwargs)
+        src_results = fixer.lint_src(src, **kwargs)
+        if not src_results:
+            continue
+        if fixer.rule_setting == "error":
+            results["errors"].append(src_results)
+        elif fixer.rule_setting == "warning":
+            results["warnings"].append(src_results)
+
+    trav_results = traverse_by(fixers, tree.pre_order(), **kwargs)
+    errors = trav_results.get("errors", [])
+    warnings = trav_results.get("warnings", [])
+    results["errors"] = results["errors"] + errors
+    results["warnings"] = results["warnings"] + warnings
 
     for fixer in fixers:
         fixer.finish_tree(tree, fixer.name)
@@ -172,6 +190,9 @@ class LintRule(BaseFix):
     def lint(self, node, results, **kwargs):
         pass
 
+    def lint_src(self, src, **kwargs):
+        pass
+
     def report(self, node, msg, *, filename="", lineno=None):
         results = {
             "name": self.name,
@@ -214,7 +235,7 @@ def linter(src, rules, fix=False, filename=""):
     if ast is None:
         return result
 
-    results = refactor_tree(active_rules, ast, fix=fix, filename=filename)
+    results = refactor_tree(active_rules, ast, src, fix=fix, filename=filename)
     errors = results["errors"]
     warnings = results["warnings"]
     was_changed = results["was_changed"]
