@@ -1,4 +1,6 @@
 dev:
+	pip install -r requirements.txt
+	pip install -r requirements_dev.txt
 	pip install -e packages/yaplint_core
 	pip install -e packages/yaplint
 	pip install -e packages/require_spaces

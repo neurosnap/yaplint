@@ -108,7 +108,11 @@ def traverse_by(fixers, traversal, fix=True, **kwargs):
                 continue
 
             if not fix:
-                results = fixer.lint(node, match_results, **kwargs)
+                results = fixer.lint(
+                    node,
+                    match_results,
+                    **kwargs,
+                )
                 if results is None:
                     continue
                 if fixer.rule_setting == "error":
@@ -117,7 +121,10 @@ def traverse_by(fixers, traversal, fix=True, **kwargs):
                     combined_results["warnings"].append(results)
                 continue
 
-            new_node = fixer.transform(node, match_results)
+            new_node = fixer.transform(
+                node,
+                match_results,
+            )
 
             if new_node is None:
                 continue
@@ -165,13 +172,15 @@ class LintRule(BaseFix):
     def lint(self, node, results, **kwargs):
         pass
 
-    def report(self, node, msg, *, filename=""):
-        return {
+    def report(self, node, msg, *, filename="", lineno=None):
+        results = {
             "name": self.name,
             "filename": filename,
-            "lineno": node.get_lineno(),
+            "lineno": lineno if lineno else node.get_lineno(),
             "msg": msg,
         }
+
+        return results
 
 
 def is_rule_active(rule):
