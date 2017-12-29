@@ -1,7 +1,6 @@
 from lib2to3.pygram import python_symbols
-from lib2to3.pytree import type_repr
 
-from yaplint_core import LintRule
+from yaplint_core import LintRule, get_indentation_level
 
 
 def remove_newlines(prefix_arr, newline_setting):
@@ -127,7 +126,8 @@ class BlankLinesRule(LintRule):
         newline_setting = self.num_newlines
         use_node = node
 
-        if use_node.depth() > 1:
+        indent_level = get_indentation_level(use_node)
+        if indent_level > 0:
             newline_setting = self.internal_num_newlines
 
         if use_node.prev_sibling is None:

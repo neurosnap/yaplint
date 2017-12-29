@@ -4,6 +4,7 @@ import os
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
 from lib2to3.fixer_base import BaseFix
+from lib2to3.pygram import python_symbols
 
 walk = os.walk
 tokenize = pgen2.tokenize
@@ -40,6 +41,14 @@ class YaplintException(Exception):
 
 class InvalidLintRuleSetting(YaplintException):
     pass
+
+
+def get_indentation_level(node, value=0):
+    if node.type == python_symbols.suite:
+        value = value + 1
+    if not node.parent:
+        return value
+    return get_indentation_level(node.parent, value)
 
 
 def refactor_string(driver, src):
