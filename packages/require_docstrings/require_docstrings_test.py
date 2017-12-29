@@ -1,6 +1,6 @@
 from yaplint_core import linter
 from yaplint_require_docstrings import RequireModuleDocstrings, \
-    RequireClassDocstrings
+    RequireClassDocstrings, RequireFuncDocstrings
 
 
 def src_equal(actual, expected):
@@ -116,6 +116,76 @@ def test_class_docstring_comment_error():
         "filename": "",
         "name": "require_class_docstrings",
     }]
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_func_docstring_missing_error():
+    rules = [RequireFuncDocstrings({'rule_setting': "error"})]
+    src = 'def test():\n    pass'
+
+    expected = [{
+        "msg": "function definition requires docstring",
+        "lineno": 1,
+        "filename": "",
+        "name": "require_func_docstrings",
+    }]
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_func_docstring_present():
+    rules = [RequireFuncDocstrings({'rule_setting': "error"})]
+    src = 'def test():\n    """This is a docstring"""\n    pass'
+
+    expected = []
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_func_docstring_comment_error():
+    rules = [RequireFuncDocstrings({'rule_setting': "error"})]
+    src = 'def test():\n    # this is a comment\n    pass'
+
+    expected = [{
+        "msg": "function definition requires docstring",
+        "lineno": 1,
+        "filename": "",
+        "name": "require_func_docstrings",
+    }]
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_method_docstring_error():
+    rules = [RequireFuncDocstrings({'rule_setting': "error"})]
+    src = """
+class Test(object):
+    def test():
+        pass
+"""
+    expected = [{
+        "msg": "function definition requires docstring",
+        "lineno": 3,
+        "filename": "",
+        "name": "require_func_docstrings",
+    }]
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_method_docstring_present():
+    rules = [RequireFuncDocstrings({'rule_setting': "error"})]
+    src = 'class Test(object):\n'
+    '    def test():\n'
+    '        """Docstring is here!"""'
+
+    expected = []
 
     actual = linter(src, rules, fix=False)
     assert actual['errors'] == expected
