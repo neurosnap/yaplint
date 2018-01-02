@@ -1,4 +1,4 @@
-def basic_reporter(results):
+def reporter(results):
     output = "\n"
     _fmt = "{name} {filename}:{lineno}: {msg} {type}\n"
     for issue in results["errors"]:
@@ -12,6 +12,3 @@ def basic_reporter(results):
     output += "-" * 8
 
     return output
-
-
-reporter = basic_reporter

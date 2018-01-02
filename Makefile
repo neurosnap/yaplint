@@ -1,11 +1,11 @@
 dev:
 	pip install -r requirements.txt
 	pip install -r requirements_dev.txt
-	pip install -e packages/yaplint_core
-	pip install -e packages/yaplint
-	pip install -e packages/require_spaces
-	pip install -e packages/blank_lines
-	pip install -e packages/basic_reporter
+	pip install -U -e packages/yaplint_core
+	pip install -U -e packages/yaplint
+	pip install -U -e packages/require_spaces
+	pip install -U -e packages/blank_lines
+	pip install -U -e packages/basic_reporter
 
 test:
 	pytest packages -vv
