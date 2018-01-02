@@ -26,13 +26,15 @@ def remove_newlines(prefix_arr, newline_setting):
 def should_insert_newlines(prefix_arr, newline_setting):
     needs_newlines = True
     counter = 0
-
     for _str in prefix_arr:
         if counter == newline_setting:
             needs_newlines = False
             break
         if _str == '':
             counter = counter + 1
+        # we have not found multiple blank lines so preserve
+        elif counter < newline_setting:
+            counter = 0
 
     return needs_newlines
 
@@ -42,7 +44,6 @@ def insert_newlines(prefix_arr, newline_setting):
     detected_newline = False
     fixed = False
     counter = 0
-
     for _str in prefix_arr:
         diff = newline_setting - counter
         should_add_newlines = (
@@ -78,14 +79,10 @@ def fix(node, newline_setting):
     if not children:
         return
 
-    suite = list(
-        filter(lambda c: c.type == python_symbols.suite, children)
-    )
-
-    if not suite:
+    bl_node = get_node_with_blank_lines(node)
+    if not bl_node:
         return
-
-    prefix = suite[-1].children[-1].prefix
+    prefix = bl_node.prefix
     newline_str = "\n"
     if "\r\n" in prefix:
         newline_str = "\r\n"
@@ -106,8 +103,15 @@ def fix(node, newline_setting):
     if add_newline:
         new_prefix.append('')
 
-    suite[-1].children[-1].prefix = newline_str.join(new_prefix)
+    bl_node.prefix = newline_str.join(new_prefix)
     return node
+
+
+def get_node_with_blank_lines(node):
+    suite = list(find_last_suite(node.prev_sibling))
+    if not suite:
+        return
+    return suite[-1].children[-1]
 
 
 class BlankLinesRule(LintRule):
@@ -124,33 +128,33 @@ class BlankLinesRule(LintRule):
 
     def transform(self, node, results):
         newline_setting = self.num_newlines
-        use_node = node
-
-        indent_level = get_indentation_level(use_node)
+        indent_level = get_indentation_level(node)
         if indent_level > 0:
             newline_setting = self.internal_num_newlines
-
-        if use_node.prev_sibling is None:
+        if node.prev_sibling is None:
             return
 
-        return fix(use_node, newline_setting)
+        return fix(node, newline_setting)
 
     def lint(self, node, results, filename=None):
         newline_setting = self.num_newlines
+        indent_level = get_indentation_level(node)
+        if indent_level > 0:
+            newline_setting = self.internal_num_newlines
         # newlines preceding a def are inside the previous sibling's suite
-        if not node.prev_sibling:
+        if node.prev_sibling is None:
             return
-        children = node.prev_sibling.children
-        suite = list(
-            filter(lambda c: c.type == python_symbols.suite, children)
-        )
-        if not suite:
+
+        bl_node = get_node_with_blank_lines(node)
+        if not bl_node:
             return
-        prefix = suite[-1].children[-1].prefix
+        prefix = bl_node.prefix
         prefix_arr = prefix.split('\n')[:-1]
 
         counter = 0
         for _str in reversed(prefix_arr):
+            if counter == newline_setting:
+                break
             if _str == '':
                 counter = counter + 1
                 continue
@@ -167,6 +171,23 @@ class BlankLinesRule(LintRule):
                 ),
                 filename=filename,
             )
+
+
+def find_last_suite(node):
+    children = node.children
+
+    for c in children:
+        if c.type == python_symbols.suite:
+            yield c
+
+    last_child = list(
+        filter(lambda c: c.children, children),
+    )
+
+    if not last_child:
+        return
+
+    yield from find_last_suite(last_child[-1])
 
 
 rules = [BlankLinesRule]

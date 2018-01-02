@@ -13,7 +13,7 @@ def test_runner_basic_errors():
     expected = """
 blank_lines ./packages/yaplint/fixtures/basic/one.py:4: expected 2 blank lines, found 1 [error]
 blank_lines ./packages/yaplint/fixtures/basic/two.py:4: expected 2 blank lines, found 1 [error]
-blank_lines ./packages/yaplint/fixtures/basic/two.py:7: expected 2 blank lines, found 0 [error]
+blank_lines ./packages/yaplint/fixtures/basic/two.py:7: expected 1 blank lines, found 0 [error]
 --------
 yaplint found 3 errors and 0 warnings
 --------

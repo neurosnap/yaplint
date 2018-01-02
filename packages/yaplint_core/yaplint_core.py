@@ -51,7 +51,7 @@ def get_indentation_level(node, value=0):
     return get_indentation_level(node.parent, value)
 
 
-def refactor_string(driver, src):
+def refactor_string(driver, src, filename="", debug=False):
     """Refactor a given input string.
     Args:
         data: a string holding the code to be refactored.
@@ -61,9 +61,12 @@ def refactor_string(driver, src):
         there were errors during the parse.
     """
     try:
-        tree = driver.parse_string(src)
+        tree = driver.parse_string(src, debug=debug)
     except Exception as err:
-        print("Can't parse: ", err.__class__.__name__, err)
+        print(
+            "Can't parse ({}) {}".format(filename, err.__class__.__name__),
+            err,
+        )
         return None
 
     return tree
@@ -223,7 +226,7 @@ def accumulate_list(acc, rule):
     return nacc
 
 
-def linter(src, rules, fix=False, filename=""):
+def linter(src, rules, fix=False, filename="", debug=False):
     result = {
         'ast': None,
         'errors': [],
@@ -239,8 +242,12 @@ def linter(src, rules, fix=False, filename=""):
         return result
 
     driver = get_driver()
-
-    ast = refactor_string(driver, "{}\n".format(src))
+    ast = refactor_string(
+        driver,
+        "{}\n".format(src),
+        filename=filename,
+        debug=debug,
+    )
     if ast is None:
         return result
 
@@ -290,7 +297,7 @@ def get_driver():
     )
 
 
-def lint_runner(_dir, rules, **kwargs):
+def lint_runner(_dir, rules, debug=False, **kwargs):
     results = {
         "errors": [],
         "warnings": [],
@@ -316,7 +323,7 @@ def lint_runner(_dir, rules, **kwargs):
             filename = fullname
             if tmp_path:
                 filename = fullname.replace(tmp_path, ".")
-            res = linter(src, rules, filename=filename, **kwargs)
+            res = linter(src, rules, filename=filename, debug=debug, **kwargs)
 
             results["errors"] = results["errors"] + res["errors"]
             results["warnings"] = results["warnings"] + res["warnings"]

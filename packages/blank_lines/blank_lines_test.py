@@ -262,3 +262,116 @@ class Test(object):
 
     actual = linter(src, rules, fix=True)
     assert src_equal(actual, expected)
+
+
+def test_nested_indent_pass():
+    rules = [BlankLinesRule({'rule_settings': "error"})]
+    src = """
+def write_TSV(filename, features, labels):
+    with open(filename, "w") as f:
+        f.write(header)
+
+
+def main():
+    # Get credentials and set up acces to Gmail API
+    pass
+"""
+
+    expected = []
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_method_decorated_pass():
+    rules = [BlankLinesRule({'rule_settings': "error"})]
+    src = """
+class Vocab(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def boo():
+        pass
+"""
+
+    expected = []
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_comments_separating_funcs_pass():
+    rules = [BlankLinesRule({'rule_settings': "error"})]
+    src = """
+def remove_farewell(text):
+    text = ""
+    return text
+
+
+# def word_tokenize(text, nlp):
+#    doc = nlp.tokenizer(text)
+#    tokens = [word.string.strip() for word in doc]
+#    return tokens
+
+# def pos_tag(text, nlp):
+#     doc = nlp(text)
+#     tags = [(word.string.strip(), word.tag_) for word in doc]
+#     return(tags)
+
+
+def word_tokenize(text):
+    return wrd_tokenize(text)
+"""
+
+    expected = []
+
+    actual = linter(src, rules, fix=False)
+    assert actual['errors'] == expected
+
+
+def test_comments_separating_funcs_fix():
+    rules = [BlankLinesRule({'rule_settings': "error"})]
+    src = """
+def remove_farewell(text):
+    text = ""
+    return text
+
+
+# def word_tokenize(text, nlp):
+#    doc = nlp.tokenizer(text)
+#    tokens = [word.string.strip() for word in doc]
+#    return tokens
+
+# def pos_tag(text, nlp):
+#     doc = nlp(text)
+#     tags = [(word.string.strip(), word.tag_) for word in doc]
+#     return(tags)
+
+def word_tokenize(text):
+    return wrd_tokenize(text)
+"""
+
+    expected = """
+def remove_farewell(text):
+    text = ""
+    return text
+
+
+# def word_tokenize(text, nlp):
+#    doc = nlp.tokenizer(text)
+#    tokens = [word.string.strip() for word in doc]
+#    return tokens
+
+# def pos_tag(text, nlp):
+#     doc = nlp(text)
+#     tags = [(word.string.strip(), word.tag_) for word in doc]
+#     return(tags)
+
+
+def word_tokenize(text):
+    return wrd_tokenize(text)
+"""
+
+    actual = linter(src, rules, fix=True)
+    assert src_equal(actual, expected)
