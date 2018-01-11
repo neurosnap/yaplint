@@ -2,6 +2,7 @@
 import sys
 import os
 import re
+import io
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
 from lib2to3.fixer_base import BaseFix
@@ -305,6 +306,22 @@ def compile_exclude_regex(exclude):
     return re.compile(exclude)
 
 
+def write_file(new_text, filename, encoding=None):
+    """Writes a string to a file."""
+    try:
+        fp = io.open(filename, "w", encoding=encoding)
+    except OSError as err:
+        print("Can't create {}: {}".format(filename, err))
+        return
+
+    with fp:
+        try:
+            fp.write(new_text)
+        except OSError as err:
+            print("Can't write {}: {}".format(filename, err))
+    print("Wrote changes to {}".format(filename))
+
+
 def lint_runner(_dir, rules, debug=False, exclude=None, **kwargs):
     results = {
         "errors": [],
@@ -315,7 +332,7 @@ def lint_runner(_dir, rules, debug=False, exclude=None, **kwargs):
         exclude = []
 
     exclude_re = map(compile_exclude_regex, exclude)
-    excluder = list(filter(lambda exclude: bool(exclude), exclude_re))
+    excluder = list(filter(bool, exclude_re))
 
     py_ext = os.extsep + "py"
     for dirpath, dirnames, filenames in os.walk(_dir):
@@ -341,7 +358,11 @@ def lint_runner(_dir, rules, debug=False, exclude=None, **kwargs):
             filename = fullname
             if tmp_path:
                 filename = fullname.replace(tmp_path, ".")
+
             res = linter(src, rules, filename=filename, debug=debug, **kwargs)
+
+            if res["src_was_changed"]:
+                write_file(str(res["ast"]), fullname)
 
             results["errors"] = results["errors"] + res["errors"]
             results["warnings"] = results["warnings"] + res["warnings"]

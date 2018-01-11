@@ -61,3 +61,39 @@ def test_lint_runner_on_runner_exclude():
         {"name": "another_example", "filename": "./packages/yaplint_core/fixtures/runner_one/one.py", "lineno": 1, "msg": "require spacing between expressions"},
     ]
     assert results["errors"] == expect
+
+
+def test_lint_runner_save_file():
+    _dir = os.path.join(PATH, "fixtures", "runner_two")
+    fname = os.path.join(_dir, "save.py")
+    rules = [AnotherExampleRule()]
+
+    with open(fname, "w", encoding="utf-8") as fp:
+        code = """
+test='example of something'
+another = 'one nice'
+
+def wow():
+    socool=123
+    return socool
+"""
+
+        fp.write(code)
+
+    lint_runner(_dir, rules, fix=True)
+
+    expected = """
+test = 'example of something'
+another = 'one nice'
+
+def wow():
+    socool = 123
+    return socool
+
+"""
+
+    try:
+        with open(fname, "r", encoding="utf-8") as fp:
+            assert fp.read() == expected
+    finally:
+        os.remove(fname)
