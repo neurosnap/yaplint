@@ -51,3 +51,13 @@ def test_lint_runner_on_runner_one():
         {"name": "another_example", "filename": "./packages/yaplint_core/fixtures/runner_one/three/four.py", "lineno": 2, "msg": "require spacing between expressions"},
     ]
     assert results["errors"] == expect
+
+
+def test_lint_runner_on_runner_exclude():
+    _dir = os.path.join(PATH, "fixtures", "runner_one")
+    rules = [AnotherExampleRule()]
+    results = lint_runner(_dir, rules, fix=False, exclude=["four.py"])
+    expect = [
+        {"name": "another_example", "filename": "./packages/yaplint_core/fixtures/runner_one/one.py", "lineno": 1, "msg": "require spacing between expressions"},
+    ]
+    assert results["errors"] == expect

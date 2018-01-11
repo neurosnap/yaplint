@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import re
 # https://github.com/python/cpython/tree/3.6/Lib/lib2to3
 from lib2to3 import pgen2, pygram, pytree
 from lib2to3.fixer_base import BaseFix
@@ -297,26 +298,43 @@ def get_driver():
     )
 
 
-def lint_runner(_dir, rules, debug=False, **kwargs):
+def compile_exclude_regex(exclude):
+    if not exclude:
+        return None
+
+    return re.compile(exclude)
+
+
+def lint_runner(_dir, rules, debug=False, exclude=None, **kwargs):
     results = {
         "errors": [],
         "warnings": [],
     }
+
+    if not exclude:
+        exclude = []
+
+    exclude_re = map(compile_exclude_regex, exclude)
+    excluder = list(filter(lambda exclude: bool(exclude), exclude_re))
+
     py_ext = os.extsep + "py"
     for dirpath, dirnames, filenames in os.walk(_dir):
         dirnames.sort()
         filenames.sort()
 
         for name in filenames:
+            fullname = os.path.join(dirpath, name)
+            matches = map(lambda regex: regex.search(fullname), excluder)
+            exclude_match = any(matches)
             should_read_file = (
                 not name.startswith(".")
                 and os.path.splitext(name)[1] == py_ext
+                and not exclude_match
             )
 
             if not should_read_file:
                 continue
 
-            fullname = os.path.join(dirpath, name)
             src = refactor_file(fullname)
 
             tmp_path = os.path.commonprefix([os.getcwd(), fullname])

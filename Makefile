@@ -6,6 +6,9 @@ dev:
 	pip install -U -e packages/require_spaces
 	pip install -U -e packages/blank_lines
 	pip install -U -e packages/basic_reporter
+	pip install -U -e packages/max_length
+	pip install -U -e packages/require_docstrings
+	pip install -U -e packages/func_wrap
 
 test:
 	pytest packages -vv
