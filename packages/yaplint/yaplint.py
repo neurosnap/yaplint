@@ -9,8 +9,9 @@ from yaplint_core import lint_runner
 @click.option("--rules")
 @click.option("--reporter", default="basic_reporter")
 @click.option("--debug", is_flag=True, default=False)
+@click.option("--fix", is_flag=True, default=False)
 @click.option("--exclude", default="")
-def yaplint(path, rules, reporter, debug, exclude):
+def yaplint(path, rules, reporter, debug, fix, exclude):
     if not rules:
         return
 
@@ -25,6 +26,7 @@ def yaplint(path, rules, reporter, debug, exclude):
         irules,
         debug=debug,
         exclude=exclude.split(","),
+        fix=fix,
     )
     output = reporter(results)
     click.echo(output)

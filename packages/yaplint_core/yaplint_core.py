@@ -322,7 +322,7 @@ def write_file(new_text, filename, encoding=None):
     print("Wrote changes to {}".format(filename))
 
 
-def lint_runner(_dir, rules, debug=False, exclude=None, **kwargs):
+def lint_runner(_dir, rules, debug=False, fix=False, exclude=None, **kwargs):
     results = {
         "errors": [],
         "warnings": [],
@@ -359,7 +359,14 @@ def lint_runner(_dir, rules, debug=False, exclude=None, **kwargs):
             if tmp_path:
                 filename = fullname.replace(tmp_path, ".")
 
-            res = linter(src, rules, filename=filename, debug=debug, **kwargs)
+            res = linter(
+                src,
+                rules,
+                filename=filename,
+                fix=fix,
+                debug=debug,
+                **kwargs,
+            )
 
             if res["src_was_changed"]:
                 write_file(str(res["ast"]), fullname)
